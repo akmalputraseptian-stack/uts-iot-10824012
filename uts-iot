@@ -1,0 +1,98 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// WIFI WOKWI
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+// THINGSPEAK API KEY
+String apiKey = "IAKTTSXG51E73FT6";
+
+// PIN
+const int ledPin = 33;
+const int buttonPin = 4;
+
+// STATUS
+int lastButtonState = HIGH;
+
+void setup() {
+
+  Serial.begin(115200);
+
+  // MODE PIN
+  pinMode(ledPin, OUTPUT);
+
+  // INPUT PULLUP
+  // ditekan = LOW
+  // dilepas = HIGH
+  pinMode(buttonPin, INPUT_PULLUP);
+
+  // WIFI CONNECT
+  WiFi.begin(ssid, password);
+
+  Serial.print("Connecting WiFi");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi Connected");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+
+  int buttonState = digitalRead(buttonPin);
+
+  // BUTTON DITEKAN
+  if (buttonState == LOW && lastButtonState == HIGH) {
+
+    Serial.println("BUTTON DITEKAN");
+
+    digitalWrite(ledPin, HIGH);
+
+    sendToThingSpeak(1);
+  }
+
+  // BUTTON DILEPAS
+  if (buttonState == HIGH && lastButtonState == LOW) {
+
+    Serial.println("BUTTON DILEPAS");
+
+    digitalWrite(ledPin, LOW);
+
+    sendToThingSpeak(0);
+  }
+
+  // SIMPAN STATUS SEBELUMNYA
+  lastButtonState = buttonState;
+
+  delay(100);
+}
+
+// FUNCTION SEND THINGSPEAK
+void sendToThingSpeak(int value) {
+
+  if (WiFi.status() == WL_CONNECTED) {
+
+    HTTPClient http;
+
+    String url =
+      "http://api.thingspeak.com/update?api_key=" +
+      apiKey +
+      "&field1=" + String(value);
+
+    Serial.println(url);
+
+    http.begin(url);
+
+    int httpResponseCode = http.GET();
+
+    Serial.print("HTTP Response Code: ");
+    Serial.println(httpResponseCode);
+
+    http.end();
+  }
+}
